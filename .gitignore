@@ -32,3 +32,13 @@ LmpGlobal/*.csproj.user
 Server/packages
 
 CLAUDE.md
+
+experiment/
+build-route-c.ps1
+tools/
+
+# NuGet CLI binary downloaded for packages.config restore
+nuget.exe
+
+# NuGet packages.config restore output (LmpClient)
+/packages/
