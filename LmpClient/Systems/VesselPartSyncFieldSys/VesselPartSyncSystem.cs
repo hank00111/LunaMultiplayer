@@ -77,13 +77,21 @@ namespace LmpClient.Systems.VesselPartSyncFieldSys
 
         #region Update routines
 
+        // Route C P1 patch: drain queue entries older than this many seconds even
+        // if their GameTime is still in the future relative to local UniversalTime.
+        // Prevents unbounded growth when sender/receiver clocks drift (issues #583,
+        // #517, #574, #580, #464, #444).
+        private const double MaxAgeSeconds = 5.0;
+
         private void ProcessVesselPartSyncs()
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
 
             foreach (var keyVal in VesselPartsSyncs)
             {
-                while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
+                while (keyVal.Value.TryPeek(out var update) &&
+                       (update.GameTime <= TimeSyncSystem.UniversalTime ||
+                        update.GameTime - TimeSyncSystem.UniversalTime > MaxAgeSeconds))
                 {
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessPartFieldSync();

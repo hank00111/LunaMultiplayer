@@ -49,11 +49,16 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
 
         #region Update routines
 
+        // Route C P1 patch: see VesselPartSyncFieldSystem for rationale.
+        private const double MaxAgeSeconds = 5.0;
+
         private void ProcessVesselPartSyncCalls()
         {
             foreach (var keyVal in VesselPartsSyncs)
             {
-                while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
+                while (keyVal.Value.TryPeek(out var update) &&
+                       (update.GameTime <= TimeSyncSystem.UniversalTime ||
+                        update.GameTime - TimeSyncSystem.UniversalTime > MaxAgeSeconds))
                 {
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessPartMethodCallSync();
