@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using LmpClient.Systems.LagDiag;
+using UnityEngine;
 
 namespace LmpClient.Windows.Debug
 {
@@ -30,6 +31,20 @@ namespace LmpClient.Windows.Debug
             _displayConnectionQueue = GUILayout.Toggle(_displayConnectionQueue, "Display connection statistics");
             if (_displayConnectionQueue)
                 GUILayout.Label(_connectionText);
+
+            _displayLagDiag = GUILayout.Toggle(_displayLagDiag, "Display lag diagnostics");
+            if (_displayLagDiag)
+            {
+                GUILayout.Label(_lagDiagText);
+                if (GUILayout.Button("Dump ring buffer to CSV"))
+                {
+                    LagDiagSystem.Singleton.DumpRingBufferToFile();
+                }
+                if (GUILayout.Button("Reset stats"))
+                {
+                    LagDiagSystem.Singleton.ResetStats();
+                }
+            }
 
             GUILayout.EndVertical();
         }

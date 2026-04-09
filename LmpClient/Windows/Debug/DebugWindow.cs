@@ -1,5 +1,6 @@
 ﻿using LmpClient.Base;
 using LmpClient.Network;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using LmpClient.Systems.Warp;
 using LmpCommon.Enums;
@@ -31,6 +32,8 @@ namespace LmpClient.Windows.Debug
         private static bool _displaySubspace;
         private static bool _displayTimes;
         private static bool _displayConnectionQueue;
+        private static bool _displayLagDiag;
+        private static string _lagDiagText;
 
         private static bool _display;
         public override bool Display
@@ -89,6 +92,22 @@ namespace LmpClient.Windows.Debug
                     StringBuilder.AppendLine($"Sent bytes: {NetworkStatistics.SentBytes}.");
                     StringBuilder.AppendLine($"Received bytes: {NetworkStatistics.ReceivedBytes}.\n");
                     _connectionText = StringBuilder.ToString();
+                    StringBuilder.Length = 0;
+                }
+
+                if (_displayLagDiag)
+                {
+                    var snap = LagDiagSystem.Singleton.GetSnapshot();
+                    foreach (var kv in snap)
+                    {
+                        var s = kv.Value;
+                        var avgMs = s.SampleCount > 0 ? s.TotalElapsedMs / (double)s.SampleCount : 0;
+                        StringBuilder.AppendLine(
+                            $"{kv.Key}: last={s.LastDrainCount} max={s.MaxDrainCount} " +
+                            $"total={s.TotalDrainCount} lastMs={s.LastElapsedMs} " +
+                            $"maxMs={s.MaxElapsedMs} avgMs={avgMs:F2}");
+                    }
+                    _lagDiagText = StringBuilder.ToString();
                     StringBuilder.Length = 0;
                 }
             }
