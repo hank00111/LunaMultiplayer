@@ -32,10 +32,12 @@ LmpGlobal/*.csproj.user
 Server/packages
 
 CLAUDE.md
+.claude/settings.local.json
 
 experiment/
 build-route-c.ps1
 tools/
+docs/
 
 # NuGet CLI binary downloaded for packages.config restore
 nuget.exe
