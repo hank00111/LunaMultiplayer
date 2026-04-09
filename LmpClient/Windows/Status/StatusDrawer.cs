@@ -29,9 +29,9 @@ namespace LmpClient.Windows.Status
 
             DrawTopButtons();
             DrawSubspaces();
-#if DEBUG
+            // Debug section unconditionally visible on this experiment branch so
+            // the LagDiag DebugWindow toggle is reachable from Release builds.
             DrawDebugSection();
-#endif
             DrawBottomButtons();
             GUILayout.EndVertical();
         }
