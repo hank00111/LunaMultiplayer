@@ -1,4 +1,5 @@
 ﻿using LmpClient.Base;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using System;
 using System.Collections.Concurrent;
@@ -14,6 +15,8 @@ namespace LmpClient.Systems.VesselFairingsSys
 
         public ConcurrentDictionary<Guid, VesselFairingQueue> VesselFairings { get; } = new ConcurrentDictionary<Guid, VesselFairingQueue>();
         private VesselFairingEvents VesselFairingEvents { get; } = new VesselFairingEvents();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -43,6 +46,9 @@ namespace LmpClient.Systems.VesselFairingsSys
 
         private void ProcessVesselFairings()
         {
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselFairings)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -50,8 +56,12 @@ namespace LmpClient.Systems.VesselFairingsSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessFairing();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("Fairings", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

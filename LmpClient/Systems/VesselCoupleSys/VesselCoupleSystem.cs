@@ -1,5 +1,6 @@
 ﻿using LmpClient.Base;
 using LmpClient.Events;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using System;
 using System.Collections.Concurrent;
@@ -16,6 +17,8 @@ namespace LmpClient.Systems.VesselCoupleSys
         public ConcurrentDictionary<Guid, VesselCoupleQueue> VesselCouples { get; } = new ConcurrentDictionary<Guid, VesselCoupleQueue>();
         private VesselCoupleEvents VesselCoupleEvents { get; } = new VesselCoupleEvents();
         public bool IgnoreEvents { get; set; }
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -52,6 +55,9 @@ namespace LmpClient.Systems.VesselCoupleSys
 
         private void ProcessVesselCouples()
         {
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselCouples)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -59,8 +65,12 @@ namespace LmpClient.Systems.VesselCoupleSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessCouple();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("Couple", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

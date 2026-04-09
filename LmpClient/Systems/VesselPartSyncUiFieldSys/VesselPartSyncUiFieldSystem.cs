@@ -1,5 +1,6 @@
 ﻿using LmpClient.Base;
 using LmpClient.Events;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using System;
 using System.Collections.Concurrent;
@@ -19,6 +20,8 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
         private VesselPartSyncUiFieldEvents VesselPartModuleSyncUiFieldEvents { get; } = new VesselPartSyncUiFieldEvents();
 
         public ConcurrentDictionary<Guid, VesselPartSyncUiFieldQueue> VesselPartsUiFieldsSyncs { get; } = new ConcurrentDictionary<Guid, VesselPartSyncUiFieldQueue>();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -54,6 +57,9 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
 
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselPartsUiFieldsSyncs)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -61,8 +67,12 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessPartMethodSync();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("PartSyncUi", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

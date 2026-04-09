@@ -1,4 +1,5 @@
 ﻿using LmpClient.Base;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using LmpClient.VesselUtilities;
 using System;
@@ -24,6 +25,8 @@ namespace LmpClient.Systems.VesselUpdateSys
         private List<Vessel> AbandonedVesselsToUpdate { get; } = new List<Vessel>();
 
         public ConcurrentDictionary<Guid, VesselUpdateQueue> VesselUpdates { get; } = new ConcurrentDictionary<Guid, VesselUpdateQueue>();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -56,6 +59,9 @@ namespace LmpClient.Systems.VesselUpdateSys
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
 
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselUpdates)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -63,8 +69,12 @@ namespace LmpClient.Systems.VesselUpdateSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessVesselUpdate();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("Update", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         private void SendVesselUpdates()

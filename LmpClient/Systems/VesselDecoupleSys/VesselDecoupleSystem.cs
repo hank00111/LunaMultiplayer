@@ -1,5 +1,6 @@
 ﻿using LmpClient.Base;
 using LmpClient.Events;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using System;
 using System.Collections.Concurrent;
@@ -17,6 +18,8 @@ namespace LmpClient.Systems.VesselDecoupleSys
         private VesselDecoupleEvents VesselDecoupleEvents { get; } = new VesselDecoupleEvents();
         public bool IgnoreEvents { get; set; }
         public Guid ManuallyDecouplingVesselId { get; set; }
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -50,6 +53,9 @@ namespace LmpClient.Systems.VesselDecoupleSys
 
         private void ProcessVesselDecouples()
         {
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselDecouples)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -57,8 +63,12 @@ namespace LmpClient.Systems.VesselDecoupleSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessDecouple();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("Decouple", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

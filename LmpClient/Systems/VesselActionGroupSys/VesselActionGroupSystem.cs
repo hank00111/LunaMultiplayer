@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using LmpClient.Base;
 using LmpClient.Events;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 
 namespace LmpClient.Systems.VesselActionGroupSys
@@ -16,6 +17,8 @@ namespace LmpClient.Systems.VesselActionGroupSys
         public ConcurrentDictionary<Guid, VesselActionGroupQueue> VesselActionGroups { get; } = new ConcurrentDictionary<Guid, VesselActionGroupQueue>();
 
         public static VesselActionGroupEvents VesselActionGroupEvents { get; } = new VesselActionGroupEvents();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -47,6 +50,9 @@ namespace LmpClient.Systems.VesselActionGroupSys
 
         private void ProcessVesselActionGroups()
         {
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselActionGroups)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -54,8 +60,12 @@ namespace LmpClient.Systems.VesselActionGroupSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessActionGroup();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("ActionGroup", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

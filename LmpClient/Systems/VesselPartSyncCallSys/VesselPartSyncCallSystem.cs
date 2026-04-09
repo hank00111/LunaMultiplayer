@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using LmpClient.Base;
 using LmpClient.Events;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using UnityEngine;
 
@@ -21,6 +22,8 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
         private VesselPartSyncCallEvents VesselPartModuleSyncCallEvents { get; } = new VesselPartSyncCallEvents();
 
         public ConcurrentDictionary<Guid, VesselPartSyncCallQueue> VesselPartsSyncs { get; } = new ConcurrentDictionary<Guid, VesselPartSyncCallQueue>();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -54,6 +57,9 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
 
         private void ProcessVesselPartSyncCalls()
         {
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselPartsSyncs)
             {
                 while (keyVal.Value.TryPeek(out var update) &&
@@ -63,8 +69,12 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessPartMethodCallSync();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("PartSyncCall", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         #endregion

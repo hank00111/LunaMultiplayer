@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using LmpClient.Base;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.TimeSync;
 using LmpClient.VesselUtilities;
 
@@ -11,6 +12,8 @@ namespace LmpClient.Systems.VesselResourceSys
         #region Fields & properties
 
         public ConcurrentDictionary<Guid, VesselResourceQueue> VesselResources { get; } = new ConcurrentDictionary<Guid, VesselResourceQueue>();
+
+        private readonly System.Diagnostics.Stopwatch _drainStopwatch = new System.Diagnostics.Stopwatch();
 
         #endregion
 
@@ -41,6 +44,9 @@ namespace LmpClient.Systems.VesselResourceSys
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
 
+            _drainStopwatch.Restart();
+            var processed = 0;
+
             foreach (var keyVal in VesselResources)
             {
                 while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
@@ -48,8 +54,12 @@ namespace LmpClient.Systems.VesselResourceSys
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessVesselResource();
                     keyVal.Value.Recycle(update);
+                    processed++;
                 }
             }
+
+            _drainStopwatch.Stop();
+            LagDiagSystem.Singleton.ReportDrain("Resource", processed, _drainStopwatch.ElapsedMilliseconds);
         }
 
         private void SendVesselResources()
