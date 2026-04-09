@@ -2,6 +2,7 @@
 using LmpClient.Base;
 using LmpClient.Events;
 using LmpClient.Localization;
+using LmpClient.Systems.LagDiag;
 using LmpClient.Systems.Lock;
 using LmpClient.Systems.SettingsSys;
 using LmpClient.Systems.TimeSync;
@@ -315,6 +316,18 @@ namespace LmpClient.Systems.Warp
         /// </summary>
         public void ProcessNewSubspace()
         {
+            // Snapshot queue state at the subspace transition so we can correlate
+            // a catch-up spike in the lag diagnostics ring buffer with the exact
+            // moment the local player jumped subspaces.
+            LunaLog.Log($"[LagDiag] === SUBSPACE CHANGE === new={CurrentSubspace} " +
+                        $"time={CurrentSubspaceTime:F1} diff={CurrentSubspaceTimeDifference:F1}");
+            var snap = LagDiagSystem.Singleton.GetSnapshot();
+            foreach (var kv in snap)
+            {
+                LunaLog.Log($"[LagDiag] subspace-snapshot {kv.Key}: " +
+                            $"max={kv.Value.MaxDrainCount} total={kv.Value.TotalDrainCount}");
+            }
+
             TimeSyncSystem.Singleton.SetGameTime(CurrentSubspaceTime);
             WarpEvent.onTimeWarpStopped.Fire();
         }
