@@ -361,6 +361,7 @@
     <Compile Include="Systems\Groups\GroupMessageSender.cs" />
     <Compile Include="Systems\Groups\GroupSystem.cs" />
     <Compile Include="Systems\KerbalSys\KerbalEvents.cs" />
+    <Compile Include="Systems\LagDiag\LagDiagSystem.cs" />
     <Compile Include="Systems\Ping\PingSystem.cs" />
     <Compile Include="Systems\VesselDecoupleSys\VesselDecouple.cs" />
     <Compile Include="Systems\VesselDecoupleSys\VesselDecoupleEvents.cs" />
