@@ -101,11 +101,11 @@ namespace LmpClient.Windows.Debug
                     foreach (var kv in snap)
                     {
                         var s = kv.Value;
-                        var avgMs = s.SampleCount > 0 ? s.TotalElapsedMs / (double)s.SampleCount : 0;
+                        var avgMs = s.SampleCount > 0 ? s.TotalElapsedMs / s.SampleCount : 0.0;
                         StringBuilder.AppendLine(
                             $"{kv.Key}: last={s.LastDrainCount} max={s.MaxDrainCount} " +
-                            $"total={s.TotalDrainCount} lastMs={s.LastElapsedMs} " +
-                            $"maxMs={s.MaxElapsedMs} avgMs={avgMs:F2}");
+                            $"total={s.TotalDrainCount} lastMs={s.LastElapsedMs:F2} " +
+                            $"maxMs={s.MaxElapsedMs:F2} avgMs={avgMs:F2}");
                     }
                     _lagDiagText = StringBuilder.ToString();
                     StringBuilder.Length = 0;

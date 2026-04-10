@@ -52,7 +52,8 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
 
         #region Update routines
 
-        // Route C P1 patch: see VesselPartSyncFieldSystem for rationale.
+        // P1 patch: timeout forced release. See VesselPartSyncFieldSystem for full
+        // rationale and derivation from TimeSyncSystem.MaxPhysicsClockMsError.
         private const double MaxAgeSeconds = 5.0;
 
         private void ProcessVesselPartSyncCalls()
@@ -74,7 +75,7 @@ namespace LmpClient.Systems.VesselPartSyncCallSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("PartSyncCall", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("PartSyncCall", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion

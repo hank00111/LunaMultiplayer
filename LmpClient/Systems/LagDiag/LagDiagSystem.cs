@@ -58,9 +58,9 @@ namespace LmpClient.Systems.LagDiag
             public int LastDrainCount;
             public int MaxDrainCount;
             public long TotalDrainCount;
-            public long LastElapsedMs;
-            public long MaxElapsedMs;
-            public long TotalElapsedMs;
+            public double LastElapsedMs;
+            public double MaxElapsedMs;
+            public double TotalElapsedMs;
             public long SampleCount;
         }
 
@@ -69,7 +69,7 @@ namespace LmpClient.Systems.LagDiag
             public double GameTime;
             public string SystemName;
             public int Count;
-            public long ElapsedMs;
+            public double ElapsedMs;
         }
 
         #endregion
@@ -91,10 +91,8 @@ namespace LmpClient.Systems.LagDiag
         /// Called by each Vessel*System.Process*() method AFTER it has drained its
         /// queue for one tick. Thread-safe. Intended to be called on Unity thread.
         /// </summary>
-        public void ReportDrain(string systemName, int count, long elapsedMs)
+        public void ReportDrain(string systemName, int count, double elapsedMs)
         {
-            if (count == 0 && elapsedMs == 0) return;
-
             lock (_lock)
             {
                 if (!_stats.TryGetValue(systemName, out var s))
@@ -112,16 +110,22 @@ namespace LmpClient.Systems.LagDiag
                 s.TotalElapsedMs += elapsedMs;
                 s.SampleCount++;
 
-                _ringBuffer.Enqueue(new DrainRecord
+                // Only ring-buffer non-idle samples to keep the buffer focused on
+                // events worth post-mortem analysis. UI / aggregated log still see
+                // every call so the user can confirm idle systems are alive.
+                if (count != 0 || elapsedMs != 0)
                 {
-                    GameTime = TimeSyncSystem.UniversalTime,
-                    SystemName = systemName,
-                    Count = count,
-                    ElapsedMs = elapsedMs
-                });
-                while (_ringBuffer.Count > MaxRingBufferSize)
-                {
-                    _ringBuffer.Dequeue();
+                    _ringBuffer.Enqueue(new DrainRecord
+                    {
+                        GameTime = TimeSyncSystem.UniversalTime,
+                        SystemName = systemName,
+                        Count = count,
+                        ElapsedMs = elapsedMs
+                    });
+                    while (_ringBuffer.Count > MaxRingBufferSize)
+                    {
+                        _ringBuffer.Dequeue();
+                    }
                 }
             }
         }
@@ -242,8 +246,13 @@ namespace LmpClient.Systems.LagDiag
             _flushBuilder.Length = 0;
             _flushBuilder.Append("[LagDiag] UT=");
             _flushBuilder.Append(TimeSyncSystem.UniversalTime.ToString("F1"));
+            var anyActive = false;
             foreach (var kv in snap)
             {
+                // Skip idle entries in the aggregated log to keep KSP.log focused on
+                // actual activity. The UI still shows them via GetSnapshot().
+                if (kv.Value.LastDrainCount == 0 && kv.Value.LastElapsedMs == 0) continue;
+                anyActive = true;
                 _flushBuilder.Append(' ');
                 _flushBuilder.Append(kv.Key);
                 _flushBuilder.Append(":last=");
@@ -254,7 +263,7 @@ namespace LmpClient.Systems.LagDiag
                 _flushBuilder.Append(kv.Value.MaxDrainCount);
             }
 
-            LunaLog.Log(_flushBuilder.ToString());
+            if (anyActive) LunaLog.Log(_flushBuilder.ToString());
         }
 
         #endregion

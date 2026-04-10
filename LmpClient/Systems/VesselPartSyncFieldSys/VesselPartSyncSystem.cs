@@ -80,10 +80,15 @@ namespace LmpClient.Systems.VesselPartSyncFieldSys
 
         #region Update routines
 
-        // Route C P1 patch: drain queue entries older than this many seconds even
-        // if their GameTime is still in the future relative to local UniversalTime.
-        // Prevents unbounded growth when sender/receiver clocks drift (issues #583,
-        // #517, #574, #580, #464, #444).
+        // P1 patch: when a queued message's GameTime is more than MaxAgeSeconds ahead
+        // of local UniversalTime, force-dequeue and process it immediately (timeout
+        // forced release) instead of waiting for the local clock to catch up.
+        // Prevents unbounded queue growth when sender/receiver are in different
+        // subspaces with divergent clocks (issues #583, #517, #574, #580, #464, #444).
+        //
+        // Value: TimeSyncSystem.MaxPhysicsClockMsError = 3500 (3.5s) is the threshold
+        // above which SetGameTime() force-jumps the clock. 5.0 > 3.5 leaves a 1.5s
+        // safety margin so normal SkewClock corrections are NOT pre-empted.
         private const double MaxAgeSeconds = 5.0;
 
         private void ProcessVesselPartSyncs()
@@ -107,7 +112,7 @@ namespace LmpClient.Systems.VesselPartSyncFieldSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("PartSyncField", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("PartSyncField", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion

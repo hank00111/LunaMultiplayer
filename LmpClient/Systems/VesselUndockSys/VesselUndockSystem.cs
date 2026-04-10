@@ -68,7 +68,7 @@ namespace LmpClient.Systems.VesselUndockSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Undock", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Undock", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion

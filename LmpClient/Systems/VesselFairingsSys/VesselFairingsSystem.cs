@@ -61,7 +61,7 @@ namespace LmpClient.Systems.VesselFairingsSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Fairings", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Fairings", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion

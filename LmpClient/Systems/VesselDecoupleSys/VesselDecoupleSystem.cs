@@ -68,7 +68,7 @@ namespace LmpClient.Systems.VesselDecoupleSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Decouple", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Decouple", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion

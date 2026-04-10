@@ -70,7 +70,7 @@ namespace LmpClient.Systems.VesselCoupleSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Couple", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Couple", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion
