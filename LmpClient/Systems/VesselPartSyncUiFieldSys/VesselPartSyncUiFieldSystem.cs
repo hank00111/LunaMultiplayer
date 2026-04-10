@@ -44,7 +44,7 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
         {
             base.OnDisabled();
 
-            LockEvent.onLockAcquire.Add(VesselPartModuleSyncUiFieldEvents.LockAcquire);
+            LockEvent.onLockAcquire.Remove(VesselPartModuleSyncUiFieldEvents.LockAcquire);
 
             VesselPartsUiFieldsSyncs.Clear();
         }
@@ -52,6 +52,10 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
         #endregion
 
         #region Update routines
+
+        // P3b patch: timeout forced release. See VesselPartSyncFieldSystem for
+        // derivation from TimeSyncSystem.MaxPhysicsClockMsError (3.5s) + 1.5s margin.
+        private const double MaxAgeSeconds = 5.0;
 
         private void ProcessVesselPartUiFieldsSyncs()
         {
@@ -62,7 +66,9 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
 
             foreach (var keyVal in VesselPartsUiFieldsSyncs)
             {
-                while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
+                while (keyVal.Value.TryPeek(out var update) &&
+                       (update.GameTime <= TimeSyncSystem.UniversalTime ||
+                        update.GameTime - TimeSyncSystem.UniversalTime > MaxAgeSeconds))
                 {
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessPartMethodSync();
@@ -72,7 +78,7 @@ namespace LmpClient.Systems.VesselPartSyncUiFieldSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("PartSyncUi", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("PartSyncUi", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         #endregion
