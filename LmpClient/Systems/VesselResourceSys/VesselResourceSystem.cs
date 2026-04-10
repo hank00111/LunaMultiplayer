@@ -40,6 +40,10 @@ namespace LmpClient.Systems.VesselResourceSys
 
         #region Update routines
 
+        // P2b patch: timeout forced release. See VesselPartSyncFieldSystem for
+        // derivation from TimeSyncSystem.MaxPhysicsClockMsError (3.5s) + 1.5s margin.
+        private const double MaxAgeSeconds = 5.0;
+
         private void ProcessVesselResources()
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
@@ -49,7 +53,9 @@ namespace LmpClient.Systems.VesselResourceSys
 
             foreach (var keyVal in VesselResources)
             {
-                while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
+                while (keyVal.Value.TryPeek(out var update) &&
+                       (update.GameTime <= TimeSyncSystem.UniversalTime ||
+                        update.GameTime - TimeSyncSystem.UniversalTime > MaxAgeSeconds))
                 {
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessVesselResource();
@@ -59,7 +65,7 @@ namespace LmpClient.Systems.VesselResourceSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Resource", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Resource", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         private void SendVesselResources()

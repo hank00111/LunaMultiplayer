@@ -55,6 +55,13 @@ namespace LmpClient.Systems.VesselUpdateSys
 
         #region Update routines
 
+        // P2 patch: timeout forced release — same mechanism as P1 (PartSyncField/Call).
+        // When GameTime - UniversalTime > 5.0s, force-dequeue and process immediately.
+        // Derived from TimeSyncSystem.MaxPhysicsClockMsError (3500ms / 3.5s) + 1.5s margin.
+        // See VesselPartSyncFieldSystem for full derivation.
+        // Evidence: LagDiag Dump 5 captured Update=367 single-tick drain causing FPS<10.
+        private const double MaxAgeSeconds = 5.0;
+
         private void ProcessVesselUpdates()
         {
             if (HighLogic.LoadedScene < GameScenes.SPACECENTER) return;
@@ -64,7 +71,9 @@ namespace LmpClient.Systems.VesselUpdateSys
 
             foreach (var keyVal in VesselUpdates)
             {
-                while (keyVal.Value.TryPeek(out var update) && update.GameTime <= TimeSyncSystem.UniversalTime)
+                while (keyVal.Value.TryPeek(out var update) &&
+                       (update.GameTime <= TimeSyncSystem.UniversalTime ||
+                        update.GameTime - TimeSyncSystem.UniversalTime > MaxAgeSeconds))
                 {
                     keyVal.Value.TryDequeue(out update);
                     update.ProcessVesselUpdate();
@@ -74,7 +83,7 @@ namespace LmpClient.Systems.VesselUpdateSys
             }
 
             _drainStopwatch.Stop();
-            LagDiagSystem.Singleton.ReportDrain("Update", processed, _drainStopwatch.ElapsedMilliseconds);
+            LagDiagSystem.Singleton.ReportDrain("Update", processed, _drainStopwatch.Elapsed.TotalMilliseconds);
         }
 
         private void SendVesselUpdates()
