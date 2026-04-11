@@ -66,10 +66,10 @@ build_script:
  # Master server build commands
  - ps: dotnet publish "$env:appveyor_build_folder\MasterServer\MasterServer.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\$env:configuration\LMPMasterServer" --os linux --self-contained false -p:PublishSingleFile=false
  # Server build commands
- - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\win-x64-$env:configuration\LMPServer" --os win --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true
- - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-x64-$env:configuration\LMPServer" --os linux --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true
- - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-arm64-$env:configuration\LMPServer" --os linux --arch arm64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true
- - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-arm-$env:configuration\LMPServer" --os linux --arch arm --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true
+ - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\win-x64-$env:configuration\LMPServer" --os win --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+ - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-x64-$env:configuration\LMPServer" --os linux --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+ - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-arm64-$env:configuration\LMPServer" --os linux --arch arm64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+ - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\linux-arm-$env:configuration\LMPServer" --os linux --arch arm --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
  - ps: dotnet publish "$env:appveyor_build_folder\Server\Server.csproj" --configuration $env:CONFIGURATION --output "$env:appveyor_build_folder\FinalFiles\any-$env:configuration\LMPServer" --self-contained false -p:PublishSingleFile=false
 after_build:
  #Client post build commands
