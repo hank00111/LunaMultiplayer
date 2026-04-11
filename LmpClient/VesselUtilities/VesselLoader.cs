@@ -51,6 +51,10 @@ namespace LmpClient.VesselUtilities
                     existingVessel.RemoveAllCrew();
 
                 FlightGlobals.RemoveVessel(existingVessel);
+                // Disable immediately so Unity stops calling FixedUpdate on this vessel before
+                // Object.Destroy is processed — same deferred-destroy race that causes
+                // Vessel.UpdateCaches() NullReferenceExceptions (see VesselRemoveSystem.KillVessel).
+                existingVessel.gameObject.SetActive(false);
                 foreach (var part in existingVessel.parts)
                 {
                     Object.Destroy(part.gameObject);
